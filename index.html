@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>testerino</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#131824; --panel2:#0f141f; --line:#232c40;
+    --txt:#e8ecf4; --muted:#93a0b8; --faint:#5d6a84;
+    --green:#2fbf71; --green-d:#14532d;
+    --amber:#f5a524; --red:#f0455a; --blue:#4f8ff7;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:16px; line-height:1.5; padding:18px 14px 40px;
+  }
+  .wrap{max-width:560px; margin:0 auto}
+  h1{font-size:22px; line-height:1.25; margin:4px 0 6px; font-weight:700}
+  .sub{color:var(--muted); font-size:14.5px; margin:0 0 18px}
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px; margin-bottom:14px;
+  }
+  .card h2{font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); margin:0 0 12px; font-weight:700}
+  .row{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:7px 0; border-bottom:1px dashed var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .k{color:var(--muted); font-size:14px; flex:none}
+  .row .v{font-size:14px; text-align:right; word-break:break-all}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px}
+  .badge{display:inline-block; padding:2px 10px; border-radius:999px; font-size:12.5px; font-weight:600}
+  .badge.ok{background:var(--green-d); color:#7ce6ab}
+  .badge.warn{background:#4a3205; color:#ffc95e}
+  .badge.bad{background:#4a1220; color:#ff8fa0}
+  .badge.idle{background:#1d2637; color:var(--muted)}
+  button{
+    display:block; width:100%; border:none; border-radius:12px; cursor:pointer;
+    font-size:17px; font-weight:700; padding:16px; min-height:56px;
+    transition:opacity .15s ease, transform .05s ease;
+  }
+  button:active{transform:scale(.99)}
+  button:disabled{opacity:.38; cursor:not-allowed}
+  .btn-connect{background:var(--blue); color:#fff}
+  .btn-deploy{background:var(--green); color:#04160b}
+  .btn-arb{background:var(--amber); color:#241300}
+  .btn-ghost{background:transparent; color:var(--muted); border:1px solid var(--line); font-size:14px; font-weight:600; padding:11px; min-height:44px; margin-top:10px}
+  .hint{font-size:13.5px; color:var(--muted); margin:10px 0 0}
+  .hint b{color:var(--txt)}
+  .warnbox{
+    background:#2a1e05; border:1px solid #6b4d08; color:#ffd98a;
+    border-radius:12px; padding:12px 14px; font-size:14px; margin-bottom:14px;
+  }
+  .errbox{
+    background:#2c0f16; border:1px solid #6e1f30; color:#ffb3bf;
+    border-radius:12px; padding:12px 14px; font-size:14px; margin-bottom:14px; word-break:break-word;
+  }
+  .okbox{
+    background:#0d2b1a; border:1px solid #1d5c38; color:#9fe8c0;
+    border-radius:12px; padding:12px 14px; font-size:14px; margin-bottom:14px; word-break:break-word;
+  }
+  .hidden{display:none !important}
+  .spin{
+    display:inline-block; width:15px; height:15px; vertical-align:-2px; margin-right:8px;
+    border:2px solid rgba(255,255,255,.35); border-top-color:currentColor; border-radius:50%;
+    animation:sp 0.8s linear infinite;
+  }
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){ .spin{animation:none} button{transition:none} }
+  a{color:var(--blue)}
+  .log{
+    background:var(--panel2); border:1px solid var(--line); border-radius:12px;
+    padding:12px 14px; font-size:13px; color:var(--muted);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    white-space:pre-wrap; word-break:break-word; max-height:220px; overflow:auto;
+  }
+  .log div{padding:2px 0; border-bottom:1px dotted #1b2334}
+  .log div:last-child{border-bottom:none}
+  .copyrow{display:flex; gap:8px; align-items:stretch; margin-top:8px}
+  .copyrow .addr{
+    flex:1; background:var(--panel2); border:1px solid var(--line); border-radius:10px;
+    padding:10px 12px; font-size:12.5px; word-break:break-all;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  .copyrow button{width:auto; flex:none; min-height:0; padding:10px 16px; font-size:14px; background:#1d2637; color:var(--txt)}
+  ol.steps{margin:0; padding-left:20px; color:var(--muted); font-size:14.5px}
+  ol.steps li{margin:6px 0}
+  ol.steps b{color:var(--txt)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Deploy Kontrak</h1>
+  <p class="sub">Kontrak yang sama persis dengan yang lulus 11/11 tes di fork. Buka halaman ini dari <b>Browser di dalam aplikasi wallet (MetaMask / TokenPocket)</b> &mdash; tanpa Remix, tanpa QR, tanpa WalletConnect. Semua transaksi lo yang approve sendiri di wallet lo.</p>
+
+  <div id="noWallet" class="warnbox hidden">
+    <b>Wallet belum kebaca.</b> Halaman ini harus dibuka dari browser di dalam aplikasi wallet (MetaMask / TokenPocket &rarr; ikon Browser/Discover/kompas &rarr; tempel alamat halaman ini). Provider wallet kadang telat ke-inject &mdash; tunggu beberapa detik, terus tap <b>Connect Wallet</b> atau <b>Refresh status</b> di bawah. Kalau dibuka dari Chrome/Safari biasa, tombol-tombolnya nggak akan jalan.
+  </div>
+
+  <div id="msgErr" class="errbox hidden"></div>
+  <div id="msgOk" class="okbox hidden"></div>
+
+  <!-- STATUS -->
+  <div class="card">
+    <h2>Status wallet</h2>
+    <div class="row"><span class="k">Koneksi</span><span class="v"><span id="stConn" class="badge idle">Belum connect</span></span></div>
+    <div class="row"><span class="k">Network</span><span class="v" id="stNet">&mdash;</span></div>
+    <div class="row"><span class="k">Alamat</span><span class="v mono" id="stAddr">&mdash;</span></div>
+    <div class="row"><span class="k">Saldo</span><span class="v" id="stBal">&mdash;</span></div>
+    <button id="btnConnect" class="btn-connect" style="margin-top:14px">Connect Wallet</button>
+    <p class="hint">Kalau network belum Elysium, tombol ini otomatis nawarin <b>pindah / tambah network Elysium (chain 99901)</b> &mdash; approve aja di wallet lo (MetaMask / TokenPocket).</p>
+  </div>
+
+  <!-- DEPLOY -->
+  <div class="card">
+    <h2>Langkah 1 &mdash; Deploy kontrak</h2>
+    <div class="row"><span class="k">Kontrak</span><span class="v">Kontrak Test</span></div>
+    <div class="row"><span class="k">Argumen WHYPE</span><span class="v mono">0xba876237b0f021a6c6d852d6c26e107997cc5e81</span></div>
+    <div class="row"><span class="k">Estimasi gas deploy</span><span class="v" id="stGas">&mdash;</span></div>
+    <button id="btnDeploy" class="btn-deploy" style="margin-top:14px" disabled>Deploy</button>
+    <div id="deployedBox" class="hidden">
+      <p class="hint" style="margin-top:14px"><b>Kontrak ter-deploy:</b></p>
+      <div class="copyrow">
+        <div class="addr" id="deployedAddr"></div>
+        <button id="btnCopyAddr" type="button">Copy</button>
+      </div>
+      <p class="hint" id="deployTxLine"></p>
+    </div>
+    <div style="margin-top:14px">
+      <p class="hint"><b>Udah pernah deploy?</b> Tempel alamat kontraknya di sini &mdash; nggak perlu deploy ulang:</p>
+      <div class="copyrow">
+        <input id="inpExistingAddr" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="0x..." style="flex:1;min-width:0;background:#0b0e14;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px" />
+        <button id="btnUseExisting" type="button" class="btn-ghost" style="width:auto;margin-top:0;white-space:nowrap">Pakai kontrak ini</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARB -->
+  <div class="card">
+    <h2>Langkah 2 &mdash; Jalankan sekali</h2>
+    <div class="row"><span class="k">pairBorrow (V2)</span><span class="v mono">0x5e42db70c4cb60206f4c6df58f8e53139d557bf2</span></div>
+    <div class="row"><span class="k">v3Pool</span><span class="v mono">0xc6f0177141b2741171519c0ef76ad62e5602968b</span></div>
+    <div class="row"><span class="k">token (e/acc-old)</span><span class="v mono">0xedb963ed6efe231f6327c87a42ed49abe2447afa</span></div>
+    <div class="row"><span class="k">amountBorrow</span><span class="v mono">2757420238959631639</span></div>
+    <div class="row"><span class="k">minProfit</span><span class="v mono">0</span></div>
+    <button id="btnArb" class="btn-arb" style="margin-top:14px" disabled>Jalankan</button>
+    <p class="hint" id="arbTxLine"></p>
+  </div>
+
+  <div class="warnbox">
+    <b>Jujur soal hasilnya:</b> di tes fork, kontrak ini ketemu <b>nggak profit</b> &mdash; spread +13,3% di layar ternyata nggak bisa dieksekusi (pool V2-nya dangkal, sisanya kemakan gas, hasil bersih negatif tipis). Kontraknya memang didesain <b>revert kalau nggak profit</b>, jadi skenario paling mungkin: transaksi gagal/revert dan yang hilang cuma gas-nya. Deploy + 1x percobaan diperkirakan makan sekitar <b>$0,02</b> dari budget $2 lo. Lanjut cuma kalau lo oke dengan hasil itu &mdash; ini tes mainnet, bukan jaminan cuan.
+  </div>
+
+  <!-- LOG -->
+  <div class="card">
+    <h2>Log</h2>
+    <div class="log" id="log"><div>Siap. Connect wallet dulu.</div></div>
+    <button id="btnRefresh" class="btn-ghost">Refresh status</button>
+  </div>
+
+  <div class="card">
+    <h2>Kalau stuck</h2>
+    <ol class="steps">
+      <li>Pastiin wallet lo (MetaMask / TokenPocket) lagi di network <b>Elysium</b> dan alamatnya <b>0xC8C4&hellip;32d1</b> (wallet yang ada 0,03 HYPE-nya).</li>
+      <li>Tombol abu-abu = langkah sebelumnya belum beres. Urutannya: <b>Connect &rarr; Deploy &rarr; Jalankan</b>.</li>
+      <li>Setiap transaksi muncul sebagai popup approve di wallet lo &mdash; cek detailnya, baru confirm.</li>
+      <li>Ada error? Screenshot log di atas, kirim ke gue.</li>
+    </ol>
+  </div>
+
+</div>
+
+<button id="btnForceArb" class="btn-arb hidden" style="position:fixed;left:14px;right:14px;bottom:14px;z-index:50;box-shadow:0 8px 30px rgba(0,0,0,.55)">Tetap Kirim (berisiko revert)</button>
+
+<script>
+"use strict";
+/* ============ Konstanta (persis dari tes fork 11/11) ============ */
+var CHAIN_ID_HEX = "0x1863d"; /* 99901 */
+var CHAIN_PARAMS = {
+  chainId: CHAIN_ID_HEX,
+  chainName: "Elysium",
+  rpcUrls: ["https://rpc-live.boxa.club/"],
+  nativeCurrency: { name: "HYPE", symbol: "HYPE", decimals: 18 },
+  blockExplorerUrls: ["https://elysium.kinetiq.xyz/explorer"]
+};
+var EXPLORER = "https://elysium.kinetiq.xyz/explorer";
+var WHYPE = "0xba876237b0f021a6c6d852d6c26e107997cc5e81";
+var ARB = {
+  pairBorrow: "0x5e42db70c4cb60206f4c6df58f8e53139d557bf2",
+  v3Pool:     "0xc6f0177141b2741171519c0ef76ad62e5602968b",
+  token:      "0xedb963ed6efe231f6327c87a42ed49abe2447afa",
+  amountBorrow: "2757420238959631639",
+  minProfit: "0"
+};
+var ARB_SELECTOR = "caea5f98"; /* arb(address,address,address,uint256,uint256) */
+/* Bytecode hasil compile (solc 0.8.20, optimizer 200, via_ir) */
+var BYTECODE = "0x60c060405234801561000f575f80fd5b50604051611d39380380611d3983398101604081905261002e9161008a565b6001600160a01b0381166100755760405162461bcd60e51b815260206004820152600a6024820152697768797065207a65726f60b01b604482015260640160405180910390fd5b336080526001600160a01b031660a0526100b7565b5f6020828403121561009a575f80fd5b81516001600160a01b03811681146100b0575f80fd5b9392505050565b60805160a051611beb61014e5f395f818160b90152818161037f0152818161043c015281816109b001528181610b9a01528181610bd501528181610c4f01528181610ce901528181610eed01528181611318015281816113ea01526114ca01525f8181610155015281816105130152818161056201528181610631015281816109700152818161149b01526116000152611beb5ff3fe60806040526004361061007c575f3560e01c80638da5cb5b1161004c5780638da5cb5b14610144578063caea5f9814610177578063fa461e3314610196578063fdc07a67146101b5575f80fd5b806310d1e85c1461008757806346e25312146100a85780637a4e4ecf146100f85780638ac043f214610117575f80fd5b3661008357005b5f80fd5b348015610092575f80fd5b506100a66100a1366004611786565b6101dc565b005b3480156100b3575f80fd5b506100db7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b348015610103575f80fd5b506100a66101123660046117eb565b610508565b348015610122575f80fd5b50610136610131366004611815565b6106ea565b6040519081526020016100ef565b34801561014f575f80fd5b506100db7f000000000000000000000000000000000000000000000000000000000000000081565b348015610182575f80fd5b506100a6610191366004611853565b610965565b3480156101a1575f80fd5b506100a66101b03660046118aa565b611209565b3480156101c0575f80fd5b506100db73fffd8963efd1fc6a506488495d951d5263988d2581565b5f6101e9828401846118f9565b80519091506001600160a01b031633146102155760405162da054360e31b815260040160405180910390fd5b6001600160a01b038616301461023e576040516314e1dbf760e11b815260040160405180910390fd5b5f80861161024c578461024e565b855b90505f81116102975760405162461bcd60e51b815260206004820152601060248201526f1b9bdd1a1a5b99c8189bdc9c9bddd95960821b60448201526064015b60405180910390fd5b6020828101515f80546001600160a01b0319166001600160a01b03928316908117825560408087015181519416848601528051808503909501855283810190819052630251596160e31b90529263128acb08926103129230929091879173fffd8963efd1fc6a506488495d951d5263988d25916044016119cd565b60408051808303815f875af115801561032d573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906103519190611a12565b50505f80546001600160a01b03191681556040516370a0823160e01b81523060048201526001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016906370a0823190602401602060405180830381865afa1580156103c4573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906103e89190611a34565b9050826080015183606001516103fe9190611a5f565b81101561041e5760405163273430c760e01b815260040160405180910390fd5b8251606084015160405163a9059cbb60e01b81526001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000169263a9059cbb92610483926004016001600160a01b03929092168252602082015260400190565b6020604051808303815f875af115801561049f573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906104c39190611a78565b6104fe5760405162461bcd60e51b815260206004820152600c60248201526b1c995c185e4819985a5b195960a21b604482015260640161028e565b5050505050505050565b336001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000161461055157604051635fc483c560e01b815260040160405180910390fd5b6001600160a01b03821661061a575f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316826040515f6040518083038185875af1925050503d805f81146105c8576040519150601f19603f3d011682016040523d82523d5f602084013e6105cd565b606091505b50509050806106155760405162461bcd60e51b81526020600482015260146024820152731b985d1a5d99481c995cd8dd594819985a5b195960621b604482015260640161028e565b505050565b60405163a9059cbb60e01b81526001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000811660048301526024820183905283169063a9059cbb906044016020604051808303815f875af1158015610686573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906106aa9190611a78565b6106e65760405162461bcd60e51b815260206004820152600d60248201526c1c995cd8dd594819985a5b1959609a1b604482015260640161028e565b5050565b5f808490505f80826001600160a01b0316630902f1ac6040518163ffffffff1660e01b8152600401606060405180830381865afa15801561072d573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906107519190611ab4565b50915091505f836001600160a01b0316630dfe16816040518163ffffffff1660e01b8152600401602060405180830381865afa158015610793573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906107b79190611b00565b90505f80886001600160a01b0316836001600160a01b0316146107ed57836001600160701b0316856001600160701b0316610802565b846001600160701b0316846001600160701b03165b915091508782116108465760405162461bcd60e51b815260206004820152600e60248201526d626f72726f7720746f6f2062696760901b604482015260640161028e565b886001600160a01b0316836001600160a01b031614806108d65750886001600160a01b0316866001600160a01b031663d21220a76040518163ffffffff1660e01b8152600401602060405180830381865afa1580156108a7573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906108cb9190611b00565b6001600160a01b0316145b6109165760405162461bcd60e51b81526020600482015260116024820152703a37b5b2b7103737ba1034b7103830b4b960791b604482015260640161028e565b6109208883611b1b565b61092c906103e5611b2e565b6109368983611b2e565b610942906103e8611b2e565b61094c9190611b45565b610957906001611a5f565b9a9950505050505050505050565b336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016146109ae57604051635fc483c560e01b815260040160405180910390fd5b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316836001600160a01b031603610a205760405162461bcd60e51b815260206004820152600e60248201526d746f6b656e20697320776879706560901b604482015260640161028e565b5f8211610a5d5760405162461bcd60e51b815260206004820152600b60248201526a616d6f756e74207a65726f60a81b604482015260640161028e565b5f8590505f816001600160a01b0316630dfe16816040518163ffffffff1660e01b8152600401602060405180830381865afa158015610a9e573d5f803e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610ac29190611b00565b90505f826001600160a01b031663d21220a76040518163ffffffff1660e01b8152600401602060405180830381865afa158015610b01573d5f803e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610b259190611b00565b9050856001600160a01b0316826001600160a01b03161480610b585750856001600160a01b0316816001600160a01b0316145b610b985760405162461bcd60e51b81526020600482015260116024820152703a37b5b2b7103737ba1034b7103830b4b960791b604482015260640161028e565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316826001600160a01b03161480610c0957507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b0316145b610c495760405162461bcd60e51b81526020600482015260116024820152703bb43cb832903737ba1034b7103830b4b960791b604482015260640161028e565b5f8790507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b0316630dfe16816040518163ffffffff1660e01b8152600401602060405180830381865afa158015610cb3573d5f803e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610cd79190611b00565b6001600160a01b03161480610d7c57507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b031663d21220a76040518163ffffffff1660e01b8152600401602060405180830381865afa158015610d4d573d5f803e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610d719190611b00565b6001600160a01b0316145b610dbc5760405162461bcd60e51b81526020600482015260116024820152701dda1e5c19481b9bdd081a5b881c1bdbdb607a1b604482015260640161028e565b866001600160a01b0316816001600160a01b0316630dfe16816040518163ffffffff1660e01b8152600401602060405180830381865afa158015610e02573d5f803e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610e269190611b00565b6001600160a01b03161480610eab5750866001600160a01b0316816001600160a01b031663d21220a76040518163ffffffff1660e01b8152600401602060405180830381865afa158015610e7c573d5f803e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610ea09190611b00565b6001600160a01b0316145b610eeb5760405162461bcd60e51b81526020600482015260116024820152701d1bdad95b881b9bdd081a5b881c1bdbdb607a1b604482015260640161028e565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316816001600160a01b0316630dfe16816040518163ffffffff1660e01b8152600401602060405180830381865afa158015610f51573d5f803e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610f759190611b00565b6001600160a01b031614610ffc57866001600160a01b0316816001600160a01b0316630dfe16816040518163ffffffff1660e01b8152600401602060405180830381865afa158015610fc9573d5f803e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610fed9190611b00565b6001600160a01b031614611071565b866001600160a01b0316816001600160a01b031663d21220a76040518163ffffffff1660e01b8152600401602060405180830381865afa158015611042573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906110669190611b00565b6001600160a01b0316145b6110b25760405162461bcd60e51b81526020600482015260126024820152710e0deded840e0c2d2e440dad2e6dac2e8c6d60731b604482015260640161028e565b5f6110be8a89896106ea565b90505f6040518060a001604052808c6001600160a01b031681526020018b6001600160a01b031681526020018a6001600160a01b031681526020018381526020018881525090505f808a6001600160a01b0316876001600160a01b031614611127575f8a61112a565b895f5b91509150876001600160a01b031663022c0d9f83833087604051602001611191919081516001600160a01b03908116825260208084015182169083015260408084015190911690820152606080830151908201526080918201519181019190915260a00190565b6040516020818303038152906040526040518563ffffffff1660e01b81526004016111bf9493929190611b64565b5f604051808303815f87803b1580156111d6575f80fd5b505af11580156111e8573d5f803e3d5ffd5b505050506111fa8d8d8d8d888e6113d3565b50505050505050505050505050565b5f546001600160a01b0316331461123357604051637b02e8e760e01b815260040160405180910390fd5b5f61124082840184611b9a565b90505f8413156112f45760405163a9059cbb60e01b8152336004820152602481018590526001600160a01b0382169063a9059cbb906044016020604051808303815f875af1158015611294573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906112b89190611a78565b6112f45760405162461bcd60e51b815260206004820152600d60248201526c1d8cc81c185e4819985a5b1959609a1b604482015260640161028e565b5f8513156113cc5760405163a9059cbb60e01b8152336004820152602481018690527f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03169063a9059cbb906044016020604051808303815f875af1158015611366573d5f803e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061138a9190611a78565b6113cc5760405162461bcd60e51b81526020600482015260136024820152721d8cc81c185e481dda1e5c194819985a5b1959606a1b604482015260640161028e565b5050505050565b6040516370a0823160e01b81523060048201525f907f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316906370a0823190602401602060405180830381865afa158015611437573d5f803e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061145b9190611a34565b90508181101561147e57604051632723fc7560e11b815260040160405180910390fd5b80156115795760405163a9059cbb60e01b81526001600160a01b037f000000000000000000000000000000000000000000000000000000000000000081166004830152602482018390527f0000000000000000000000000000000000000000000000000000000000000000169063a9059cbb906044016020604051808303815f875af1158015611510573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906115349190611a78565b6115795760405162461bcd60e51b81526020600482015260166024820152751c1c9bd99a5d081d1c985b9cd9995c8819985a5b195960521b604482015260640161028e565b6040516370a0823160e01b81523060048201525f906001600160a01b038716906370a0823190602401602060405180830381865afa1580156115bd573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906115e19190611a34565b905080156116bc5760405163a9059cbb60e01b81526001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000811660048301526024820183905287169063a9059cbb906044016020604051808303815f875af1158015611655573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906116799190611a78565b6116bc5760405162461bcd60e51b8152602060048201526014602482015273191d5cdd081d1c985b9cd9995c8819985a5b195960621b604482015260640161028e565b60408051868152602081018690529081018390526001600160a01b0380881691898216918b16907fe804e3d6fcce5ae4828fb66587c93defe17262fdade23c9cd540b6126591f31d9060600160405180910390a45050505050505050565b6001600160a01b038116811461172e575f80fd5b50565b803561173c8161171a565b919050565b5f8083601f840112611751575f80fd5b50813567ffffffffffffffff811115611768575f80fd5b60208301915083602082850101111561177f575f80fd5b9250929050565b5f805f805f6080868803121561179a575f80fd5b85356117a58161171a565b94506020860135935060408601359250606086013567ffffffffffffffff8111156117ce575f80fd5b6117da88828901611741565b969995985093965092949392505050565b5f80604083850312156117fc575f80fd5b82356118078161171a565b946020939093013593505050565b5f805f60608486031215611827575f80fd5b83356118328161171a565b925060208401356118428161171a565b929592945050506040919091013590565b5f805f805f60a08688031215611867575f80fd5b85356118728161171a565b945060208601356118828161171a565b935060408601356118928161171a565b94979396509394606081013594506080013592915050565b5f805f80606085870312156118bd575f80fd5b8435935060208501359250604085013567ffffffffffffffff8111156118e1575f80fd5b6118ed87828801611741565b95989497509550505050565b5f60a08284031215611909575f80fd5b60405160a0810181811067ffffffffffffffff8211171561193857634e487b7160e01b5f52604160045260245ffd5b60405282356119468161171a565b815260208301356119568161171a565b602082015261196760408401611731565b604082015260608301356060820152608083013560808201528091505092915050565b5f81518084525f5b818110156119ae57602081850181015186830182015201611992565b505f602082860101526020601f19601f83011685010191505092915050565b6001600160a01b0386811682528515156020830152604082018590528316606082015260a0608082018190525f90611a079083018461198a565b979650505050505050565b5f8060408385031215611a23575f80fd5b505080516020909101519092909150565b5f60208284031215611a44575f80fd5b5051919050565b634e487b7160e01b5f52601160045260245ffd5b80820180821115611a7257611a72611a4b565b92915050565b5f60208284031215611a88575f80fd5b81518015158114611a97575f80fd5b9392505050565b80516001600160701b038116811461173c575f80fd5b5f805f60608486031215611ac6575f80fd5b611acf84611a9e565b9250611add60208501611a9e565b9150604084015163ffffffff81168114611af5575f80fd5b809150509250925092565b5f60208284031215611b10575f80fd5b8151611a978161171a565b81810381811115611a7257611a72611a4b565b8082028115828204841417611a7257611a72611a4b565b5f82611b5f57634e487b7160e01b5f52601260045260245ffd5b500490565b84815283602082015260018060a01b0383166040820152608060608201525f611b90608083018461198a565b9695505050505050565b5f60208284031215611baa575f80fd5b8135611a978161171a56fea2646970667358221220d8088b364396ac4b4ed2f60d9e3d41b6da97431f9430bea6a1a8278642a6f2b064736f6c63430008140033";
+
+/* ============ State ============ */
+var account = null;
+var chainOk = false;
+var deployedAddress = null;
+var busy = false;
+
+/* ============ Helper ============ */
+function $(id){ return document.getElementById(id); }
+function log(msg){
+  var el = $("log");
+  var d = document.createElement("div");
+  d.textContent = msg;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+function showErr(msg){
+  var e = $("msgErr"); e.textContent = msg; e.classList.remove("hidden");
+  $("msgOk").classList.add("hidden");
+  log("ERROR: " + msg);
+}
+function showOk(msg){
+  var e = $("msgOk"); e.textContent = msg; e.classList.remove("hidden");
+  $("msgErr").classList.add("hidden");
+}
+function clearMsgs(){
+  $("msgErr").classList.add("hidden");
+  $("msgOk").classList.add("hidden");
+}
+function shortAddr(a){ return a ? a.slice(0,6) + "\u2026" + a.slice(-4) : "\u2014"; }
+function padAddr(a){ return "000000000000000000000000" + a.replace(/^0x/i,"").toLowerCase(); }
+function padUint(decStr){
+  var h = BigInt(decStr).toString(16);
+  return ("0".repeat(64) + h).slice(-64);
+}
+function weiToHype(hexWei){
+  try{
+    var w = BigInt(hexWei);
+    var whole = w / 1000000000000000000n;
+    var frac = (w % 1000000000000000000n).toString().padStart(18,"0").slice(0,6).replace(/0+$/,"");
+    return whole.toString() + (frac ? "." + frac : "") + " HYPE";
+  }catch(e){ return hexWei; }
+}
+function txLink(hash){
+  return '<a href="' + EXPLORER + "/tx/" + hash + '" target="_blank" rel="noopener">lihat di explorer</a>';
+}
+var _providerListenersAttached = false;
+function getProvider(){
+  try{
+    var eth = window.ethereum;
+    if(eth && Array.isArray(eth.providers) && eth.providers.length){
+      for(var i=0;i<eth.providers.length;i++){
+        var p = eth.providers[i];
+        if(p && (p.isTokenPocket || p.isTokenpocket || p.isTp)){ return p; }
+      }
+    }
+    if(eth && typeof eth.request === "function"){ return eth; }
+    var tp = window.tokenpocket;
+    if(tp){
+      if(tp.ethereum && typeof tp.ethereum.request === "function"){ return tp.ethereum; }
+      if(typeof tp.request === "function"){ return tp; }
+      if(tp.provider && typeof tp.provider.request === "function"){ return tp.provider; }
+    }
+  }catch(e){}
+  return null;
+}
+function hasWallet(){ return !!getProvider(); }
+function rpc(method, params){
+  var p = getProvider();
+  if(!p){ return Promise.reject(new Error("Wallet belum kebaca")); }
+  return p.request({ method: method, params: params || [] });
+}
+function waitForProvider(timeoutMs){
+  return new Promise(function(resolve){
+    var first = getProvider();
+    if(first){ resolve(first); return; }
+    var limit = timeoutMs || 5000;
+    var start = Date.now();
+    var done = false;
+    var iv = null;
+    function finish(p){ if(done){ return; } done = true; if(iv){ clearInterval(iv); } try{ window.removeEventListener("ethereum#initialized", onInit); }catch(e){} resolve(p || null); }
+    function onInit(){ var p2 = getProvider(); if(p2){ finish(p2); } }
+    try{ window.addEventListener("ethereum#initialized", onInit); }catch(e){}
+    iv = setInterval(function(){
+      var p3 = getProvider();
+      if(p3){ finish(p3); return; }
+      if(Date.now() - start >= limit){ finish(null); }
+    }, 200);
+    setTimeout(function(){ finish(getProvider()); }, limit + 150);
+  });
+}
+function attachProviderListeners(){
+  var p = getProvider();
+  if(!p || _providerListenersAttached || !p.on){ return; }
+  try{
+    p.on("accountsChanged", function(){ log("Akun wallet berubah."); deployedAddress = null; try{ localStorage.removeItem("testerino_deployed"); }catch(e){} var b = $("deployedBox"); if(b){ b.classList.add("hidden"); } refreshStatus(); });
+    p.on("chainChanged", function(){ log("Network berubah."); refreshStatus(); });
+    _providerListenersAttached = true;
+  }catch(e){}
+}
+function walletLabel(p){
+  if(!p){ return "wallet"; }
+  if(p.isTokenPocket || p.isTokenpocket || p.isTp){ return "TokenPocket"; }
+  if(p.isMetaMask){ return "MetaMask"; }
+  return "wallet browser";
+}
+function setBusy(b, btn, label){
+  busy = b;
+  if(btn){
+    if(b){ btn.dataset.label = btn.innerHTML; btn.innerHTML = '<span class="spin"></span>' + label; btn.disabled = true; }
+    else { btn.innerHTML = btn.dataset.label || btn.innerHTML; refreshButtons(); }
+  }
+}
+function refreshButtons(){
+  $("btnDeploy").disabled = !(account && chainOk) || busy;
+  $("btnArb").disabled = !(account && chainOk && deployedAddress) || busy;
+  $("btnConnect").textContent = account ? "Reconnect / Cek Ulang" : "Connect Wallet";
+}
+
+/* ============ Status ============ */
+function refreshStatus(){
+  if(!hasWallet()){
+    return waitForProvider(3500).then(function(p){
+      if(!p){ $("noWallet").classList.remove("hidden"); return; }
+      $("noWallet").classList.add("hidden");
+      attachProviderListeners();
+      return refreshStatus();
+    });
+  }
+  attachProviderListeners();
+  $("noWallet").classList.add("hidden");
+  return rpc("eth_chainId").then(function(cid){
+    chainOk = (cid.toLowerCase() === CHAIN_ID_HEX);
+    $("stNet").innerHTML = chainOk
+      ? 'Elysium (99901) <span class="badge ok">Benar</span>'
+      : 'Chain ' + parseInt(cid,16) + ' <span class="badge bad">Bukan Elysium</span>';
+    return rpc("eth_accounts");
+  }).then(function(accs){
+    account = (accs && accs.length) ? accs[0] : null;
+    if(account){
+      $("stConn").className = "badge ok"; $("stConn").textContent = "Terhubung";
+      $("stAddr").textContent = shortAddr(account);
+      return rpc("eth_getBalance", [account, "latest"]).then(function(b){
+        $("stBal").textContent = weiToHype(b);
+      });
+    } else {
+      $("stConn").className = "badge idle"; $("stConn").textContent = "Belum connect";
+      $("stAddr").textContent = "\u2014"; $("stBal").textContent = "\u2014";
+    }
+  }).then(function(){
+    refreshButtons();
+    if(account && chainOk && !deployedAddress){ estimateDeployGas(); }
+  }).catch(function(e){
+    log("Gagal refresh status: " + (e && e.message ? e.message : e));
+  });
+}
+
+function estimateDeployGas(){
+  var data = BYTECODE + padAddr(WHYPE);
+  rpc("eth_estimateGas", [{ from: account, data: data }]).then(function(g){
+    $("stGas").textContent = parseInt(g,16).toLocaleString("id-ID") + " gas";
+  }).catch(function(e){
+    $("stGas").innerHTML = '<span class="badge warn">Estimasi gagal</span>';
+    log("Estimasi gas deploy gagal: " + (e && e.message ? e.message : e) + " (biasanya saldo HYPE kurang buat deploy).");
+  });
+}
+
+/* ============ Connect ============ */
+function ensureChain(){
+  return rpc("wallet_switchEthereumChain", [{ chainId: CHAIN_ID_HEX }]).catch(function(e){
+    if(e && (e.code === 4902 || /Unrecognized chain|not added/i.test(e.message || ""))){
+      log("Network Elysium belum ada di wallet, nambahin\u2026");
+      return rpc("wallet_addEthereumChain", [CHAIN_PARAMS]);
+    }
+    throw e;
+  });
+}
+function doConnect(){
+  clearMsgs();
+  if(!hasWallet()){
+    var btnWait = $("btnConnect"); setBusy(true, btnWait, "Nyari wallet\u2026");
+    log("Connect: wallet belum kebaca, nunggu provider ke-inject (TokenPocket / MetaMask)\u2026");
+    waitForProvider(5000).then(function(p){
+      setBusy(false, btnWait);
+      if(!p){ $("noWallet").classList.remove("hidden"); showErr("Wallet nggak kebaca. Buka halaman ini dari browser di dalam aplikasi wallet (MetaMask / TokenPocket), tunggu beberapa detik, terus tap Connect lagi atau Refresh status."); return; }
+      attachProviderListeners();
+      doConnect();
+    });
+    return;
+  }
+  var btn = $("btnConnect"); setBusy(true, btn, "Connecting\u2026");
+  rpc("eth_requestAccounts").then(function(accs){
+    account = accs[0];
+    log("Wallet terhubung: " + account);
+    return rpc("eth_chainId");
+  }).then(function(cid){
+    if(cid.toLowerCase() !== CHAIN_ID_HEX){
+      log("Network sekarang chain " + parseInt(cid,16) + ", pindah ke Elysium\u2026");
+      return ensureChain();
+    }
+  }).then(function(){
+    setBusy(false, btn);
+    return refreshStatus();
+  }).then(function(){
+    if(account && chainOk){ showOk("Terhubung ke Elysium sebagai " + shortAddr(account) + ". Lanjut Deploy."); }
+    else if(account && !chainOk){ showErr("Wallet terhubung tapi network belum Elysium. Tap Connect lagi dan approve pindah network."); }
+  }).catch(function(e){
+    setBusy(false, btn);
+    if(e && e.code === 4001){ showErr("Permintaan ditolak di wallet. Tap Connect lagi dan approve."); }
+    else { showErr("Connect gagal: " + (e && e.message ? e.message : e)); }
+  });
+}
+
+/* ============ Deploy ============ */
+function waitReceipt(hash, tries){
+  return rpc("eth_getTransactionReceipt", [hash]).then(function(r){
+    if(r) return r;
+    if(tries <= 0) throw new Error("Receipt belum muncul setelah 2 menit. Cek tx di explorer.");
+    return new Promise(function(res){ setTimeout(res, 4000); }).then(function(){ return waitReceipt(hash, tries - 1); });
+  });
+}
+function doDeploy(){
+  clearMsgs();
+  if(!account || !chainOk){ showErr("Connect dulu dan pastikan network Elysium."); return; }
+  var btn = $("btnDeploy"); setBusy(true, btn, "Menunggu approve di wallet\u2026");
+  var data = BYTECODE + padAddr(WHYPE);
+  var txHash = null;
+  var phase = "estimate";
+  rpc("eth_estimateGas", [{ from: account, data: data }]).then(function(g){
+    var gas = Math.floor(parseInt(g,16) * 1.25);
+    log("Deploy: estimasi gas " + parseInt(g,16) + ", dikirim dengan limit " + gas + ".");
+    phase = "send";
+    btn.innerHTML = '<span class="spin"></span>Menunggu approve di wallet\u2026';
+    return rpc("eth_sendTransaction", [{ from: account, data: data, gas: "0x" + gas.toString(16) }]);
+  }).then(function(hash){
+    txHash = hash;
+    log("Tx deploy terkirim: " + hash);
+    btn.innerHTML = '<span class="spin"></span>Menunggu konfirmasi\u2026';
+    return waitReceipt(hash, 30);
+  }).then(function(r){
+    setBusy(false, btn);
+    if(r.status === "0x1" && r.contractAddress){
+      deployedAddress = r.contractAddress;
+      try{ localStorage.setItem("testerino_deployed", deployedAddress); }catch(e){}
+      $("deployedAddr").textContent = deployedAddress;
+      $("deployedBox").classList.remove("hidden");
+      $("deployTxLine").innerHTML = "Tx: " + txLink(txHash);
+      showOk("Deploy sukses. Kontrak di " + deployedAddress + ". Tombol Jalankan udah aktif.");
+      log("Kontrak ter-deploy di " + deployedAddress);
+    } else {
+      showErr("Tx deploy ke-mined tapi statusnya gagal (revert). Gas kepakai, kontrak nggak jadi. Screenshot log ini dan kirim ke gue.");
+    }
+    refreshButtons(); refreshStatus();
+  }).catch(function(e){
+    setBusy(false, btn);
+    if(e && e.code === 4001){ showErr("Deploy dibatalkan di wallet. Belum ada tx yang terkirim."); }
+    else if(phase === "estimate"){ showErr("Deploy berhenti SEBELUM kirim — estimasi gas gagal (biasanya saldo HYPE kurang buat deploy): " + (e && e.message ? e.message : e)); }
+    else { showErr("Deploy gagal: " + (e && e.message ? e.message : String(e))); }
+    refreshButtons();
+  });
+}
+
+/* ============ Arb ============ */
+function doArb(){
+  clearMsgs();
+  if(!deployedAddress){ showErr("Deploy dulu, kontraknya belum ada."); return; }
+  var btn = $("btnArb"); setBusy(true, btn, "Ngecek estimasi\u2026");
+  var data = "0x" + ARB_SELECTOR + padAddr(ARB.pairBorrow) + padAddr(ARB.v3Pool) + padAddr(ARB.token) + padUint(ARB.amountBorrow) + padUint(ARB.minProfit);
+  /* Fase 1: estimasi dulu. Kalau estimasi revert, itu sinyal kuat tx bakal
+     revert (nggak profit) — berhenti di sini, tawarin kirim paksa secara eksplisit. */
+  rpc("eth_estimateGas", [{ from: account, to: deployedAddress, data: data }]).then(function(g){
+    log("Estimasi gas lolos (" + parseInt(g,16) + ") — sinyal bagus, lanjut kirim.");
+    sendArb(data, btn);
+  }).catch(function(e){
+    setBusy(false, btn);
+    log("Estimasi gas gagal — kemungkinan besar tx bakal revert (nggak ada profit, sesuai hasil fork). Detail: " + (e && e.message ? e.message : e));
+    showErr("Estimasi bilang tx bakal revert (kemungkinan nggak profit — sesuai hasil tes fork). Tx BELUM dikirim, belum ada gas kepakai. Kalau tetap mau maksa kirim, tap tombol kuning yang muncul di bawah layar.");
+    var force = $("btnForceArb");
+    force.classList.remove("hidden");
+    force.onclick = function(){ force.classList.add("hidden"); sendArb(data, btn); };
+    refreshButtons();
+  });
+}
+function sendArb(data, btn){
+  clearMsgs();
+  setBusy(true, btn, "Menunggu approve di wallet\u2026");
+  rpc("eth_sendTransaction", [{ from: account, to: deployedAddress, data: data }]).then(function(hash){
+    finishArbSend(hash, btn);
+  }).catch(function(e){
+    setBusy(false, btn);
+    if(e && e.code === 4001){ showErr("Dibatalkan di wallet."); }
+    else { showErr("Gagal kirim: " + (e && e.message ? e.message : e)); }
+    refreshButtons();
+  });
+}
+function finishArbSend(hash, btn){
+  log("Tx terkirim: " + hash);
+  $("arbTxLine").innerHTML = "Tx: " + txLink(hash);
+  btn.innerHTML = '<span class="spin"></span>Menunggu konfirmasi\u2026';
+  waitReceipt(hash, 30).then(function(r){
+    setBusy(false, btn);
+    if(r.status === "0x1"){
+      showOk("SUKSES ke-mined. Cek saldo WHYPE di kontrak/explorer — profit (kalau ada) dikirim ke owner wallet lo.");
+      log("Sukses. Tx: " + hash);
+    } else {
+      showErr("REVERT — sesuai dugaan hasil fork: spread-nya nggak bisa dieksekusi / nggak profit, kontrak nolak jalan. Yang hilang cuma gas tx ini. Screenshot log ini dan kirim ke gue.");
+      log("Revert. Tx: " + hash);
+    }
+    refreshButtons(); refreshStatus();
+  }).catch(function(e){
+    setBusy(false, btn);
+    showErr(e && e.message ? e.message : String(e));
+    refreshButtons();
+  });
+}
+
+/* ============ Wire up ============ */
+$("btnConnect").addEventListener("click", doConnect);
+$("btnDeploy").addEventListener("click", doDeploy);
+$("btnArb").addEventListener("click", doArb);
+$("btnUseExisting").addEventListener("click", function(){
+  clearMsgs();
+  var v = ($("inpExistingAddr").value || "").trim();
+  if(!/^0x[0-9a-fA-F]{40}$/.test(v)){ showErr("Alamat kontraknya nggak valid — harus 0x + 40 karakter hex."); return; }
+  deployedAddress = v;
+  $("deployedAddr").textContent = v;
+  $("deployedBox").classList.remove("hidden");
+  $("deployTxLine").innerHTML = "";
+  try{ localStorage.setItem("testerino_deployed", v); }catch(e){}
+  refreshButtons();
+  showOk("Kontrak " + v + " dipakai. Tombol Jalankan udah aktif — nggak perlu deploy ulang.");
+  log("Kontrak existing dipakai: " + v);
+});
+$("btnRefresh").addEventListener("click", function(){ clearMsgs(); refreshStatus(); });
+$("btnCopyAddr").addEventListener("click", function(){
+  var a = $("deployedAddr").textContent;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(a).then(function(){ $("btnCopyAddr").textContent = "Ke-copy!"; setTimeout(function(){ $("btnCopyAddr").textContent = "Copy"; }, 1500); });
+  }
+});
+attachProviderListeners();
+try{ window.addEventListener("ethereum#initialized", function(){ attachProviderListeners(); refreshStatus(); }); }catch(e){}
+/* TokenPocket / MetaMask kadang inject provider telat — jangan langsung
+   vonis "wallet nggak kebaca" pas halaman baru kebuka. Tunggu sampai 6 detik. */
+(function initDetect(){
+  if(hasWallet()){ attachProviderListeners(); refreshStatus(); return; }
+  log("Nyari wallet\u2026 provider TokenPocket / MetaMask kadang telat ke-inject, tunggu bentar.");
+  waitForProvider(6000).then(function(p){
+    if(p){
+      $("noWallet").classList.add("hidden");
+      log("Wallet kebaca: " + walletLabel(p) + ". Tap Connect Wallet.");
+      attachProviderListeners();
+      refreshStatus();
+    } else {
+      $("noWallet").classList.remove("hidden");
+      log("Wallet belum kebaca setelah nunggu 6 detik — pastiin buka dari browser di dalam TokenPocket / MetaMask, terus tap Refresh status.");
+    }
+  });
+})();
+
+/* Pulihkan alamat kontrak yang tersimpan (biar reload nggak bikin deploy ulang). */
+try{
+  var savedAddr = localStorage.getItem("testerino_deployed");
+  if(savedAddr && /^0x[0-9a-fA-F]{40}$/.test(savedAddr)){
+    deployedAddress = savedAddr;
+    $("deployedAddr").textContent = savedAddr;
+    $("deployedBox").classList.remove("hidden");
+    var inpSaved = $("inpExistingAddr"); if(inpSaved){ inpSaved.value = savedAddr; }
+    refreshButtons();
+  }
+}catch(e){}
+</script>
+</body>
+</html>
