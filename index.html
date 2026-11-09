@@ -486,7 +486,11 @@ function doArb(){
 function sendArb(data, btn){
   clearMsgs();
   setBusy(true, btn, "Menunggu approve di wallet\u2026");
-  rpc("eth_sendTransaction", [{ from: account, to: deployedAddress, data: data }]).then(function(hash){
+  /* Gas eksplisit: estimasi MetaMask ngaco buat tx yang bakal revert (pernah
+     nampilin fee 394 HYPE). arb() asli cuma ~191k gas; kasih limit 300k +
+     max fee 1 gwei (nilai yang terbukti jalan di 02:46 WIB) biar fee yang
+     tampil di wallet masuk akal (~0.0003 HYPE max). */
+  rpc("eth_sendTransaction", [{ from: account, to: deployedAddress, data: data, gas: "0x493E0", maxFeePerGas: "0x3B9ACA00", maxPriorityFeePerGas: "0x0" }]).then(function(hash){
     finishArbSend(hash, btn);
   }).catch(function(e){
     setBusy(false, btn);
